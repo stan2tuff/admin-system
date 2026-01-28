@@ -5,14 +5,17 @@ import time
 app = Flask(__name__)
 CORS(app)
 
-# Data storage
 data = {
     "announcement": "",
-    "kick_user": "", # Stores the name of the person to kick
-    "active_servers": {} 
+    "kick_user": "",
+    "kill_user": "",
+    "warn_user": "",
+    "warn_text": "",
+    "active_servers": {}, # { jobId: {"players": [], "last_ping": 0} }
+    "logs": []
 }
 
-ADMIN_PASSWORD = "1234" # USE THIS ON THE WEBSITE
+ADMIN_PASSWORD = "1234"
 
 @app.route('/')
 def home():
@@ -23,15 +26,25 @@ def get_announcement():
     global data
     server_info = request.json
     job_id = server_info.get("jobId", "Unknown")
-    data["active_servers"][job_id] = time.time()
+    
+    # Store the player list sent from Roblox
+    data["active_servers"][job_id] = {
+        "players": server_info.get("players", []),
+        "last_ping": time.time()
+    }
     
     response = {
         "message": data["announcement"],
-        "kick": data["kick_user"]
+        "kick": data["kick_user"],
+        "kill": data["kill_user"],
+        "warn": data["warn_user"],
+        "warn_msg": data["warn_text"]
     }
     
-    # FIX: Reset the kick target so they aren't stuck in a kick-loop
-    data["kick_user"] = "" 
+    # Reset single-use commands
+    data["kick_user"] = ""
+    data["kill_user"] = ""
+    data["warn_user"] = ""
     
     return jsonify(response)
 
@@ -41,16 +54,41 @@ def set_command():
     if req_data.get("password") != ADMIN_PASSWORD:
         return jsonify({"error": "Unauthorized"}), 401
     
-    # Update announcement or kick target
-    data["announcement"] = req_data.get("message", "")
-    data["kick_user"] = req_data.get("kick", "")
+    cmd_type = req_data.get("type")
+    target = req_data.get("target")
+    
+    if cmd_type == "announce":
+        data["announcement"] = req_data.get("message")
+        data["logs"].insert(0, f"Announced: {data['announcement']}")
+    elif cmd_type == "kick":
+        data["kick_user"] = target
+        data["logs"].insert(0, f"Kicked: {target}")
+    elif cmd_type == "kill":
+        data["kill_user"] = target
+        data["logs"].insert(0, f"Killed: {target}")
+    elif cmd_type == "warn":
+        data["warn_user"] = target
+        data["warn_text"] = req_data.get("message", "You have been warned.")
+        data["logs"].insert(0, f"Warned: {target}")
+
+    data["logs"] = data["logs"][:10]
     return jsonify({"success": True})
 
-@app.get('/server-stats')
-def get_stats():
+@app.get('/get-data')
+def get_all_data():
     current_time = time.time()
-    live_count = sum(1 for t in data["active_servers"].values() if current_time - t < 20)
-    return jsonify({"count": live_count})
+    # Clean up old servers and build a master player list
+    all_players = []
+    for jid, info in list(data["active_servers"].items()):
+        if current_time - info["last_ping"] < 20:
+            all_players.extend(info["players"])
+        else:
+            del data["active_servers"][jid]
+            
+    return jsonify({
+        "players": list(set(all_players)), # Unique names
+        "logs": data["logs"]
+    })
 
 if __name__ == '__main__':
     app.run()
