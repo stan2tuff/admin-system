@@ -4,42 +4,59 @@
     <title>Admin Dashboard</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; }
-        .box { background: #1e1e1e; padding: 20px; border-radius: 10px; display: inline-block; margin-top: 50px; }
+        .box { background: #1e1e1e; padding: 20px; border-radius: 10px; display: inline-block; margin-top: 50px; width: 350px;}
         .status-dot { height: 10px; width: 10px; background-color: #444; border-radius: 50%; display: inline-block; }
         .online { background-color: #00ff00; box-shadow: 0 0 8px #00ff00; }
         input, textarea { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; background: #333; color: white; }
-        button { background: #00a2ff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        button { background: #00a2ff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px;}
+        .kick-btn { background: #ff4444; }
     </style>
 </head>
 <body>
     <div class="box">
         <h2>Admin Panel</h2>
-        <p><span id="dot" class="status-dot"></span> Active Servers: <b id="serverCount">0</b></p>
-        <input type="password" id="pw" placeholder="Admin Key">
-        <textarea id="msg" placeholder="Announcement text..."></textarea><br>
-        <button onclick="send()">Push Announcement</button>
+        <p><span id="dot" class="status-dot"></span> Servers: <b id="serverCount">0</b></p>
+        
+        <input type="password" id="pw" placeholder="Admin Key (1234)">
+        <hr>
+        
+        <textarea id="msg" placeholder="Announcement text..."></textarea>
+        <button onclick="send('announce')">Push Announcement</button>
+        
+        <hr>
+        <input type="text" id="kickName" placeholder="Player Username">
+        <button class="kick-btn" onclick="send('kick')">Kick Player</button>
+        
+        <p id="status"></p>
     </div>
 
     <script>
-        // Update server count every 5 seconds
         async function updateStats() {
-            const res = await fetch('/server-stats');
-            const data = await res.json();
-            document.getElementById('serverCount').innerText = data.count;
-            document.getElementById('dot').className = data.count > 0 ? "status-dot online" : "status-dot";
+            try {
+                const res = await fetch('/server-stats');
+                const data = await res.json();
+                document.getElementById('serverCount').innerText = data.count;
+                document.getElementById('dot').className = data.count > 0 ? "status-dot online" : "status-dot";
+            } catch(e) {}
         }
         setInterval(updateStats, 5000);
 
-        async function send() {
-            const res = await fetch('/set-announcement', {
+        async function send(type) {
+            const status = document.getElementById('status');
+            const payload = {
+                password: document.getElementById('pw').value,
+                message: type === 'announce' ? document.getElementById('msg').value : "",
+                kick: type === 'kick' ? document.getElementById('kickName').value : ""
+            };
+
+            const res = await fetch('/set-command', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    password: document.getElementById('pw').value,
-                    message: document.getElementById('msg').value
-                })
+                body: JSON.stringify(payload)
             });
-            alert(res.ok ? "Sent!" : "Error!");
+
+            status.innerText = res.ok ? "Command Sent!" : "Error: Check Password";
+            if(res.ok && type === 'kick') document.getElementById('kickName').value = "";
         }
     </script>
 </body>
