@@ -1,32 +1,45 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Panel</title>
+    <title>Admin Dashboard</title>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 50px; }
-        input, textarea { width: 300px; padding: 10px; margin: 10px; border-radius: 5px; border: none; }
-        button { padding: 10px 20px; background: #00a2ff; border: none; color: white; cursor: pointer; border-radius: 5px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; }
+        .box { background: #1e1e1e; padding: 20px; border-radius: 10px; display: inline-block; margin-top: 50px; }
+        .status-dot { height: 10px; width: 10px; background-color: #444; border-radius: 50%; display: inline-block; }
+        .online { background-color: #00ff00; box-shadow: 0 0 8px #00ff00; }
+        input, textarea { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; background: #333; color: white; }
+        button { background: #00a2ff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h2>Global Announcement Panel</h2>
-    <input type="password" id="pass" placeholder="Admin Password"><br>
-    <textarea id="msg" placeholder="Type message..."></textarea><br>
-    <button onclick="send()">Push to Roblox</button>
-    <p id="status"></p>
+    <div class="box">
+        <h2>Admin Panel</h2>
+        <p><span id="dot" class="status-dot"></span> Active Servers: <b id="serverCount">0</b></p>
+        <input type="password" id="pw" placeholder="Admin Key">
+        <textarea id="msg" placeholder="Announcement text..."></textarea><br>
+        <button onclick="send()">Push Announcement</button>
+    </div>
 
     <script>
+        // Update server count every 5 seconds
+        async function updateStats() {
+            const res = await fetch('/server-stats');
+            const data = await res.json();
+            document.getElementById('serverCount').innerText = data.count;
+            document.getElementById('dot').className = data.count > 0 ? "status-dot online" : "status-dot";
+        }
+        setInterval(updateStats, 5000);
+
         async function send() {
-            const status = document.getElementById('status');
-            const response = await fetch('/set-announcement', {
+            const res = await fetch('/set-announcement', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    message: document.getElementById('msg').value,
-                    password: document.getElementById('pass').value
+                    password: document.getElementById('pw').value,
+                    message: document.getElementById('msg').value
                 })
             });
-            status.innerText = response.ok ? "Success!" : "Failed!";
+            alert(res.ok ? "Sent!" : "Error!");
         }
     </script>
 </body>
