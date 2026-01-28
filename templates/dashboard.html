@@ -1,65 +1,120 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CyberOS | Dashboard</title>
+    <title>CyberOS | Premium</title>
     <style>
-        :root { --neon: #00f2ff; --bg: #0d0e12; --card: #161b22; --danger: #ff4c4c; }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; margin: 0; }
-        .sidebar { width: 280px; background: #000; padding: 30px; height: 100vh; border-right: 1px solid #333; }
-        .main { flex: 1; padding: 40px; }
-        .card { background: var(--card); border: 1px solid #45a29e; border-radius: 12px; padding: 20px; margin-bottom: 25px; }
-        input { background: #000; border: 1px solid #444; color: white; padding: 12px; border-radius: 5px; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
-        button { background: var(--neon); color: black; border: none; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%; }
-        .p-badge { background: #222; padding: 10px; margin-bottom: 5px; border-left: 3px solid var(--neon); }
+        :root { --neon: #00f2ff; --bg: #050608; --glass: rgba(255, 255, 255, 0.05); }
+        body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar */
+        .sidebar { width: 260px; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); padding: 30px; border-right: 1px solid #222; }
+        .sidebar h1 { color: var(--neon); letter-spacing: 2px; font-size: 22px; text-shadow: 0 0 10px var(--neon); }
+        
+        /* Content Area */
+        .content { flex: 1; padding: 40px; overflow-y: auto; background: radial-gradient(circle at top right, #101827, #050608); }
+        
+        /* Cards */
+        .card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 25px; margin-bottom: 25px; backdrop-filter: blur(12px); }
+        .neon-border { border-color: var(--neon); box-shadow: 0 0 15px rgba(0, 242, 255, 0.1); }
+        
+        /* Controls */
+        input { background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; padding: 12px; border-radius: 8px; width: 100%; box-sizing: border-box; margin-bottom: 10px; transition: 0.3s; }
+        input:focus { border-color: var(--neon); outline: none; box-shadow: 0 0 10px var(--neon); }
+        button { background: var(--neon); color: black; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; }
+        button:hover { filter: brightness(1.2); transform: translateY(-2px); }
+
+        /* Player Grid */
+        .p-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        .p-card { background: rgba(255,255,255,0.03); border: 1px solid #222; padding: 20px; border-radius: 12px; text-align: center; transition: 0.3s; }
+        .p-card:hover { border-color: var(--neon); background: rgba(0, 242, 255, 0.05); }
+        
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .online { background: #00ff88; box-shadow: 0 0 8px #00ff88; }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
-    <h1 style="color: var(--neon);">CYBER.OS</h1>
-    <p>User: <b>{{ user }}</b></p>
-    <p style="color: #888;">Assigned Game: <span style="color: var(--neon);">{{ gid }}</span></p>
+    <h1>CYBER.OS</h1>
+    <div style="margin-top: 40px;">
+        <p style="font-size: 12px; color: #888;">AUTHORIZED OPERATOR</p>
+        <p style="font-weight: bold;">{{ user }}</p>
+        <hr style="border: 0; border-top: 1px solid #222; margin: 20px 0;">
+        <p style="font-size: 12px; color: #888;">TARGET GAME ID</p>
+        <p style="color: var(--neon); font-family: monospace;">{{ gid }}</p>
+    </div>
 </div>
 
-<div class="main">
+<div class="content">
     {% if role == 'master' %}
-    <div class="card" style="border-color: var(--danger);">
-        <h2 style="color: var(--danger); margin-top: 0;">Master: Link User to Game</h2>
-        <input type="text" id="d_id" placeholder="Paste Discord User ID">
-        <input type="text" id="g_id" placeholder="Assign Game ID">
-        <button onclick="linkUser()" style="background: var(--danger); color: white;">AUTHORIZE USER</button>
+    <div class="card" style="border-color: #ff4c4c;">
+        <h3 style="color: #ff4c4c; margin-top:0;">SYSTEM REGISTRY</h3>
+        <table style="width:100%; text-align:left; border-collapse: collapse;">
+            <tr style="color:#555; font-size:12px;"><th>USER</th><th>DISCORD ID</th><th>GAME ID</th></tr>
+            {% for uid, data in all_users.items() %}
+            <tr style="border-top:1px solid #222;">
+                <td style="padding:10px 0;">{{ data.name }}</td>
+                <td>{{ uid }}</td>
+                <td style="color:var(--neon)">{{ data.gid }}</td>
+            </tr>
+            {% endfor %}
+        </table>
     </div>
     {% endif %}
 
+    <div class="card neon-border">
+        <h3>GLOBAL SERVER COMMANDS</h3>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="globalMsg" placeholder="Message to all players...">
+            <button onclick="sendGlobal('message')" style="width: 150px;">ANNOUNCE</button>
+            <button onclick="sendGlobal('kickall')" style="width: 150px; background: #ff4c4c; color: white;">SHUTDOWN</button>
+        </div>
+    </div>
+
     <div class="card">
-        <h2>Live Players</h2>
-        <div id="playerList">Waiting for game server to report...</div>
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin:0;"><span class="status-dot online"></span>LIVE PLAYERS</h2>
+            <input type="text" id="pSearch" placeholder="Search username..." style="width: 200px; margin:0;" onkeyup="filterPlayers()">
+        </div>
+        <div id="pList" class="p-grid">Scanning game servers...</div>
     </div>
 </div>
 
 <script>
-    async function linkUser() {
-        const discord_id = document.getElementById('d_id').value;
-        const game_id = document.getElementById('g_id').value;
-        const res = await fetch('/master/assign', {
+    async function sendGlobal(action) {
+        const msg = document.getElementById('globalMsg').value;
+        await fetch('/api/command', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({discord_id, game_id})
+            body: JSON.stringify({target: 'all', action: action, msg: msg})
         });
-        if(res.ok) alert("Permissions granted to user.");
+        alert("Command broadcasted to GID {{ gid }}");
     }
 
     async function refresh() {
         const res = await fetch('/api/data');
         const data = await res.json();
-        const list = document.getElementById('playerList');
-        if (data.players && data.players.length > 0) {
-            list.innerHTML = data.players.map(p => `<div class="p-badge">👤 ${p}</div>`).join('');
-        } else {
-            list.innerHTML = "No players online for GID: {{ gid }}";
+        const list = document.getElementById('pList');
+        list.innerHTML = data.players.map(p => `
+            <div class="p-card player-item">
+                <div style="font-size: 30px; margin-bottom:10px;">👤</div>
+                <div class="p-name" style="font-weight:bold;">${p}</div>
+                <button style="font-size:10px; margin-top:10px; padding:5px;" onclick="alert('Manage ${p}')">CONTROL</button>
+            </div>
+        `).join('');
+    }
+
+    function filterPlayers() {
+        let input = document.getElementById('pSearch').value.toLowerCase();
+        let items = document.getElementsByClassName('player-item');
+        for (let item of items) {
+            let name = item.querySelector('.p-name').innerText.toLowerCase();
+            item.style.display = name.includes(input) ? "block" : "none";
         }
     }
+
     setInterval(refresh, 3000); refresh();
 </script>
+
 </body>
 </html>
