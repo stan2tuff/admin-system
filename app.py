@@ -8,13 +8,13 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true" # Only for local testing
 
 # --- DISCORD CONFIGURATION ---
 # Get these from the Discord Developer Portal
-app.config["DISCORD_CLIENT_ID"] = "YOUR_CLIENT_ID"
-app.config["DISCORD_CLIENT_SECRET"] = "YOUR_CLIENT_SECRET"
-app.config["DISCORD_REDIRECT_URI"] = "http://127.0.0.1:5000/callback"
+app.config["DISCORD_CLIENT_ID"] = "1466079509177438383"
+app.config["DISCORD_CLIENT_SECRET"] = "3kMJQyeLFWXo_n4jWu2k-P4M2J_PEdv8"
+app.config["DISCORD_REDIRECT_URI"] = "https://admin-system-mj0v.onrender.com/callback"
 
 discord = DiscordOAuth2Session(app)
 DB_FILE = "database.json"
-MASTER_DISCORD_ID = "YOUR_PERSONAL_DISCORD_ID" # Your ID to see the Master Dashboard
+MASTER_DISCORD_ID = "1463540341473804485" # Your ID to see the Master Dashboard
 
 def load_db():
     if not os.path.exists(DB_FILE):
