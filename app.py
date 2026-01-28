@@ -11,7 +11,7 @@ data = {
     "active_servers": {} # Stores JobId: LastSeenTime
 }
 
-ADMIN_PASSWORD = "your_secret_key_here"
+ADMIN_PASSWORD = "123"
 
 @app.route('/')
 def home():
