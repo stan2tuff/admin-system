@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CyberOS | Dashboard</title>
+    <style>
+        :root { --neon: #00f2ff; --bg: #0d0e12; --card: #161b22; --danger: #ff4c4c; }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; margin: 0; }
+        .sidebar { width: 280px; background: #000; padding: 30px; height: 100vh; border-right: 1px solid #333; }
+        .main { flex: 1; padding: 40px; }
+        .card { background: var(--card); border: 1px solid #45a29e; border-radius: 12px; padding: 20px; margin-bottom: 25px; }
+        input { background: #000; border: 1px solid #444; color: white; padding: 12px; border-radius: 5px; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+        button { background: var(--neon); color: black; border: none; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%; }
+        .p-badge { background: #222; padding: 10px; margin-bottom: 5px; border-left: 3px solid var(--neon); }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h1 style="color: var(--neon);">CYBER.OS</h1>
+    <p>User: <b>{{ user }}</b></p>
+    <p style="color: #888;">Assigned Game: <span style="color: var(--neon);">{{ gid }}</span></p>
+</div>
+
+<div class="main">
+    {% if role == 'master' %}
+    <div class="card" style="border-color: var(--danger);">
+        <h2 style="color: var(--danger); margin-top: 0;">Master: Link User to Game</h2>
+        <input type="text" id="d_id" placeholder="Paste Discord User ID">
+        <input type="text" id="g_id" placeholder="Assign Game ID">
+        <button onclick="linkUser()" style="background: var(--danger); color: white;">AUTHORIZE USER</button>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <h2>Live Players</h2>
+        <div id="playerList">Waiting for game server to report...</div>
+    </div>
+</div>
+
+<script>
+    async function linkUser() {
+        const discord_id = document.getElementById('d_id').value;
+        const game_id = document.getElementById('g_id').value;
+        const res = await fetch('/master/assign', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({discord_id, game_id})
+        });
+        if(res.ok) alert("Permissions granted to user.");
+    }
+
+    async function refresh() {
+        const res = await fetch('/api/data');
+        const data = await res.json();
+        const list = document.getElementById('playerList');
+        if (data.players && data.players.length > 0) {
+            list.innerHTML = data.players.map(p => `<div class="p-badge">👤 ${p}</div>`).join('');
+        } else {
+            list.innerHTML = "No players online for GID: {{ gid }}";
+        }
+    }
+    setInterval(refresh, 3000); refresh();
+</script>
+</body>
+</html>
