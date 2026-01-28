@@ -72,6 +72,7 @@ def get_data():
     uid = session['user_id']
     gid = db['users'].get(uid, {}).get('gid', 'None')
     return jsonify(db['games'].get(gid, {"players": []}))
-
+    
 if __name__ == '__main__':
-    app.run(port=5000)
+port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
