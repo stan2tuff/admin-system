@@ -1,29 +1,34 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Allows your website to talk to this API
+CORS(app)
 
-# This variable stores the current message in the server's memory
+# Storage for the current announcement
+# Note: This clears if the server restarts. 
 current_announcement = ""
-ADMIN_PASSWORD = "stxn123"
+ADMIN_PASSWORD = "stxn123"  # CHANGE THIS!
+
+@app.route('/')
+def home():
+    # Serves the index.html file from the /templates folder
+    return render_template('index.html')
 
 @app.route('/set-announcement', methods=['POST'])
 def set_announcement():
     global current_announcement
     data = request.json
     
-    # Security check
+    # Simple security check
     if data.get("password") != ADMIN_PASSWORD:
         return jsonify({"error": "Unauthorized"}), 401
     
     current_announcement = data.get("message", "")
-    print(f"New Announcement: {current_announcement}")
-    return jsonify({"success": True})
+    return jsonify({"success": True, "message": "Announcement set!"})
 
 @app.route('/get-announcement', methods=['GET'])
 def get_announcement():
     return jsonify({"message": current_announcement})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=False)
