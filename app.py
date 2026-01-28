@@ -8,43 +8,46 @@ CORS(app)
 # Data storage
 data = {
     "announcement": "",
-    "active_servers": {} # Stores JobId: LastSeenTime
+    "kick_user": "", # Stores the name of the person to kick
+    "active_servers": {} 
 }
 
-ADMIN_PASSWORD = "123"
+ADMIN_PASSWORD = "1234" # USE THIS ON THE WEBSITE
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# Roblox calls this to check for messages AND report its status
 @app.route('/get-announcement', methods=['POST'])
 def get_announcement():
     server_info = request.json
     job_id = server_info.get("jobId", "Unknown")
-    
-    # Register the server as "Online"
     data["active_servers"][job_id] = time.time()
     
-    return jsonify({
-        "message": data["announcement"]
-    })
+    # Send both the announcement and the kick target to Roblox
+    response = {
+        "message": data["announcement"],
+        "kick": data["kick_user"]
+    }
+    
+    # Clear the kick command after sending it so they don't get infinite kicked
+    # (Optional: You can add logic to clear it after a few seconds instead)
+    return jsonify(response)
 
-# Website calls this to send the message
-@app.route('/set-announcement', methods=['POST'])
-def set_announcement():
+@app.route('/set-command', methods=['POST'])
+def set_command():
     req_data = request.json
     if req_data.get("password") != ADMIN_PASSWORD:
         return jsonify({"error": "Unauthorized"}), 401
     
+    # Update announcement or kick target
     data["announcement"] = req_data.get("message", "")
+    data["kick_user"] = req_data.get("kick", "")
     return jsonify({"success": True})
 
-# Website calls this to see how many servers are live
 @app.get('/server-stats')
 def get_stats():
     current_time = time.time()
-    # Only count servers that pinged in the last 20 seconds
     live_count = sum(1 for t in data["active_servers"].values() if current_time - t < 20)
     return jsonify({"count": live_count})
 
