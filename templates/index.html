@@ -3,50 +3,77 @@
 <head>
     <title>Admin Dashboard</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; }
-        .box { background: #1e1e1e; padding: 20px; border-radius: 10px; display: inline-block; margin-top: 50px; width: 350px;}
-        .status-dot { height: 10px; width: 10px; background-color: #444; border-radius: 50%; display: inline-block; }
-        .online { background-color: #00ff00; box-shadow: 0 0 8px #00ff00; }
-        input, textarea { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; background: #333; color: white; }
-        button { background: #00a2ff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px;}
-        .kick-btn { background: #ff4444; }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+        .card { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #333; }
+        .player-item { padding: 10px; border-bottom: 1px solid #333; cursor: pointer; transition: 0.2s; }
+        .player-item:hover { background: #2a2a2a; color: #00a2ff; }
+        .btn-group button { margin: 5px; padding: 8px; cursor: pointer; border-radius: 4px; border: none; color: white; }
+        input, textarea { width: 100%; background: #333; color: white; border: none; padding: 8px; margin: 5px 0; box-sizing: border-box; }
+        #logBox { font-family: monospace; color: #00ff00; height: 100px; overflow-y: auto; background: #000; padding: 10px; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>Admin Panel</h2>
-        <p><span id="dot" class="status-dot"></span> Servers: <b id="serverCount">0</b></p>
-        
-        <input type="password" id="pw" placeholder="Admin Key (1234)">
-        <hr>
-        
-        <textarea id="msg" placeholder="Announcement text..."></textarea>
-        <button onclick="send('announce')">Push Announcement</button>
-        
-        <hr>
-        <input type="text" id="kickName" placeholder="Player Username">
-        <button class="kick-btn" onclick="send('kick')">Kick Player</button>
-        
-        <p id="status"></p>
+    <div class="grid">
+        <div class="card">
+            <h3>Online Players</h3>
+            <div id="playerList">Loading players...</div>
+        </div>
+
+        <div>
+            <div class="card">
+                <h3>Actions for: <span id="selectedUser" style="color:#00a2ff">None</span></h3>
+                <div class="btn-group">
+                    <button style="background:#ff4444" onclick="doAction('kick')">Kick</button>
+                    <button style="background:#ff9900" onclick="doAction('kill')">Kill</button>
+                    <button style="background:#00a2ff" onclick="doAction('warn')">Warn</button>
+                </div>
+                <input type="text" id="warnMsg" placeholder="Warning reason (for Warn only)">
+                <input type="password" id="pw" placeholder="Admin Key (1234)">
+            </div>
+
+            <div class="card">
+                <h3>Global Announcement</h3>
+                <textarea id="globalMsg" placeholder="Message..."></textarea>
+                <button style="background:#00a2ff; width:100%; color:white; border:none; padding:10px;" onclick="doAction('announce')">Broadcast</button>
+            </div>
+
+            <div class="card">
+                <h3>Live Logs</h3>
+                <div id="logBox"></div>
+            </div>
+        </div>
     </div>
 
     <script>
-        async function updateStats() {
-            try {
-                const res = await fetch('/server-stats');
-                const data = await res.json();
-                document.getElementById('serverCount').innerText = data.count;
-                document.getElementById('dot').className = data.count > 0 ? "status-dot online" : "status-dot";
-            } catch(e) {}
-        }
-        setInterval(updateStats, 5000);
+        let selectedPlayer = "";
 
-        async function send(type) {
-            const status = document.getElementById('status');
+        async function refreshData() {
+            const res = await fetch('/get-data');
+            const d = await res.json();
+            
+            // Update Player List
+            const pList = document.getElementById('playerList');
+            pList.innerHTML = d.players.length ? "" : "No players online.";
+            d.players.forEach(p => {
+                const div = document.createElement('div');
+                div.className = "player-item";
+                div.innerText = p;
+                div.onclick = () => { selectedPlayer = p; document.getElementById('selectedUser').innerText = p; };
+                pList.appendChild(div);
+            });
+
+            // Update Logs
+            document.getElementById('logBox').innerHTML = d.logs.join("<br>");
+        }
+        setInterval(refreshData, 5000);
+
+        async function doAction(type) {
             const payload = {
                 password: document.getElementById('pw').value,
-                message: type === 'announce' ? document.getElementById('msg').value : "",
-                kick: type === 'kick' ? document.getElementById('kickName').value : ""
+                type: type,
+                target: selectedPlayer,
+                message: type === 'announce' ? document.getElementById('globalMsg').value : document.getElementById('warnMsg').value
             };
 
             const res = await fetch('/set-command', {
@@ -54,9 +81,7 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
-
-            status.innerText = res.ok ? "Command Sent!" : "Error: Check Password";
-            if(res.ok && type === 'kick') document.getElementById('kickName').value = "";
+            if (!res.ok) alert("Failed! Check password.");
         }
     </script>
 </body>
