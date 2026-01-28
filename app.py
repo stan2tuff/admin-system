@@ -20,18 +20,19 @@ def home():
 
 @app.route('/get-announcement', methods=['POST'])
 def get_announcement():
+    global data
     server_info = request.json
     job_id = server_info.get("jobId", "Unknown")
     data["active_servers"][job_id] = time.time()
     
-    # Send both the announcement and the kick target to Roblox
     response = {
         "message": data["announcement"],
         "kick": data["kick_user"]
     }
     
-    # Clear the kick command after sending it so they don't get infinite kicked
-    # (Optional: You can add logic to clear it after a few seconds instead)
+    # FIX: Reset the kick target so they aren't stuck in a kick-loop
+    data["kick_user"] = "" 
+    
     return jsonify(response)
 
 @app.route('/set-command', methods=['POST'])
