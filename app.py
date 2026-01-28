@@ -12,7 +12,7 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
 
 # --- DISCORD CONFIG ---
 app.config["DISCORD_CLIENT_ID"] = "1466079509177438383"
-app.config["DISCORD_CLIENT_SECRET"] = "PASTE_YOUR_NEW_RESET_SECRET_HERE"
+app.config["DISCORD_CLIENT_SECRET"] = "3kMJQyeLFWXo_n4jWu2k-P4M2J_PEdv8"
 app.config["DISCORD_REDIRECT_URI"] = "https://admin-system-mj0v.onrender.com/callback"
 
 discord = DiscordOAuth2Session(app)
