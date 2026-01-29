@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>STXN | Secure Admin</title>
+    <title>STXN | Secure Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #00d2ff; --bg: #060912; --card: rgba(255,255,255,0.05); }
@@ -10,49 +10,51 @@
         .main { flex: 1; padding: 40px; overflow-y: auto; background: radial-gradient(circle at top right, #1a2a44, #060912); }
         .card { background: var(--card); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 25px; margin-bottom: 25px; backdrop-filter: blur(10px); }
         h1, h3 { font-family: 'Orbitron', sans-serif; color: var(--primary); margin-top: 0; }
-        input { background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; width: 100%; margin-bottom: 15px; }
-        button { background: var(--primary); color: black; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; }
-        .status-pill { padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: bold; border: 1px solid; }
-        .online { color: #00ff88; border-color: #00ff88; }
-        .offline { color: #ff4e50; border-color: #ff4e50; }
-        #logBox { background: #000; padding: 15px; border-radius: 10px; height: 150px; overflow-y: auto; font-family: monospace; font-size: 12px; color: #00ff88; }
+        input { background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; width: 100%; margin-bottom: 10px; }
+        button { background: var(--primary); color: black; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px;}
+        .online { color: #00ff88; font-size: 12px; font-weight: bold; }
+        #logBox { background: #000; padding: 15px; border-radius: 10px; height: 120px; overflow-y: auto; font-family: monospace; font-size: 12px; color: #00ff88; }
     </style>
 </head>
 <body>
 <div class="sidebar">
     <h1>STXN DEV</h1>
-    <p style="font-size: 12px; color: #555;">OPERATOR: {{ user }}</p>
+    <p style="font-size: 11px; color: #555;">USER: {{ user }}</p>
     <div id="statusTag"></div>
-    <div style="margin-top: 50px;"><p style="color: #444; font-size: 11px;">GID: {{ gid }}</p></div>
+    <div style="margin-top: 30px;"><p style="color: #444; font-size: 10px;">LICENSED GID: {{ gid }}</p></div>
 </div>
 <div class="main">
     {% if role == 'master' %}
-    <div class="card" style="border-left: 5px solid var(--primary);">
-        <h3>MASTER REGISTRY</h3>
-        <div style="display: flex; gap: 10px;"><input type="text" id="m_did" placeholder="Discord ID"><input type="text" id="m_name" placeholder="Name"><input type="text" id="m_gid" placeholder="GID"><button onclick="masterLink()" style="width: 150px;">LINK</button></div>
+    <div class="card">
+        <h3>LICENSE REGISTRY</h3>
+        <input type="text" id="m_did" placeholder="Discord ID">
+        <input type="text" id="m_name" placeholder="Name">
+        <input type="text" id="m_gid" placeholder="GID">
+        <button onclick="masterLink()">ADD ADMIN</button>
     </div>
     {% endif %}
     <div class="card">
-        <h3>COMMAND CENTER</h3>
-        <div style="display: flex; gap: 15px;"><input type="text" id="cmdMsg" placeholder="Message..."><button onclick="dispatch('all', 'message')" style="width: 200px;">SEND</button><button onclick="dispatch('all', 'kickall')" style="background: #ff4e50; color: white; width: 150px;">SHUTDOWN</button></div>
+        <h3>BROADCAST</h3>
+        <input type="text" id="cmdMsg" placeholder="Notification text...">
+        <button onclick="dispatch('all', 'message')">SEND TO ALL</button>
     </div>
-    <div class="card"><h3>REAL-TIME LOGS</h3><div id="logBox">Waiting for data...</div></div>
-    <div class="card"><h3>LIVE ENTITIES</h3><div id="playerList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px;">Scanning...</div></div>
+    <div class="card"><h3>SERVER ACTIVITY</h3><div id="logBox">Loading feed...</div></div>
+    <div class="card"><h3>PLAYER MANIFEST</h3><div id="pList">Connecting...</div></div>
 </div>
 <script>
     async function dispatch(target, action) {
         const msg = document.getElementById('cmdMsg').value;
-        await fetch('/api/command', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({target, action, msg})});
+        await fetch('/api/command', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({target, action, msg})});
     }
     async function update() {
         const res = await fetch('/api/data'); const data = await res.json();
-        document.getElementById('statusTag').innerHTML = data.is_online ? '<span class="status-pill online">LINK ACTIVE</span>' : '<span class="status-pill offline">LINK SEVERED</span>';
+        document.getElementById('statusTag').innerHTML = data.is_online ? '<span class="online">● SYSTEM ACTIVE</span>' : '<span style="color:#ff4e50">○ LINK SEVERED</span>';
         document.getElementById('logBox').innerHTML = data.logs.map(l => `<div>[${l.time}] ${l.msg}</div>`).join('');
-        document.getElementById('playerList').innerHTML = data.players.map(p => `<div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.05);"><div style="font-weight: 600; margin-bottom: 10px;">${p}</div><button onclick="dispatch('${p}', 'kick')" style="font-size: 10px; background: transparent; border: 1px solid #444; color: white;">KICK</button></div>`).join('');
+        document.getElementById('pList').innerHTML = data.players.map(p => `<div style="padding:10px; background:rgba(255,255,255,0.03); margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between;">${p} <button onclick="dispatch('${p}', 'kick')" style="width:auto; padding:5px 10px; font-size:10px;">KICK</button></div>`).join('');
     }
     async function masterLink() {
         const discord_id = document.getElementById('m_did').value; const username = document.getElementById('m_name').value; const game_id = document.getElementById('m_gid').value;
-        await fetch('/master/assign', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({discord_id, username, game_id})});
+        await fetch('/master/assign', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({discord_id, username, game_id})});
         location.reload();
     }
     setInterval(update, 5000); update();
