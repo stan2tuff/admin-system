@@ -1,4 +1,5 @@
 Flask
 Flask-Discord
+Flask-Cors
+requests
 gunicorn
-flask-cors
