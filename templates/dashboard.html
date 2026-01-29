@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>STXN | Advanced Admin Suite</title>
+    <title>STXN | Secure Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #00d2ff; --bg: #060912; --card: rgba(255, 255, 255, 0.05); }
+        :root { --primary: #00d2ff; --bg: #060912; --card: rgba(255,255,255,0.05); }
         body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; display: flex; margin: 0; height: 100vh; overflow: hidden; }
-        .sidebar { width: 280px; background: rgba(0,0,0,0.8); border-right: 1px solid #222; padding: 40px 25px; }
+        .sidebar { width: 280px; background: #000; border-right: 1px solid #222; padding: 40px 25px; }
         .main { flex: 1; padding: 40px; overflow-y: auto; background: radial-gradient(circle at top right, #1a2a44, #060912); }
         .card { background: var(--card); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 25px; margin-bottom: 25px; backdrop-filter: blur(10px); }
         h1, h3 { font-family: 'Orbitron', sans-serif; color: var(--primary); margin-top: 0; }
@@ -16,7 +15,7 @@
         .status-pill { padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: bold; border: 1px solid; }
         .online { color: #00ff88; border-color: #00ff88; }
         .offline { color: #ff4e50; border-color: #ff4e50; }
-        .log-row { font-size: 12px; color: #8a99af; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        #logBox { background: #000; padding: 15px; border-radius: 10px; height: 150px; overflow-y: auto; font-family: monospace; font-size: 12px; color: #00ff88; }
     </style>
 </head>
 <body>
@@ -30,26 +29,15 @@
     {% if role == 'master' %}
     <div class="card" style="border-left: 5px solid var(--primary);">
         <h3>MASTER REGISTRY</h3>
-        <div style="display: flex; gap: 10px;">
-            <input type="text" id="m_did" placeholder="Discord ID">
-            <input type="text" id="m_name" placeholder="Name">
-            <input type="text" id="m_gid" placeholder="GID">
-            <button onclick="masterLink()" style="width: 150px;">LINK</button>
-        </div>
+        <div style="display: flex; gap: 10px;"><input type="text" id="m_did" placeholder="Discord ID"><input type="text" id="m_name" placeholder="Name"><input type="text" id="m_gid" placeholder="GID"><button onclick="masterLink()" style="width: 150px;">LINK</button></div>
     </div>
     {% endif %}
     <div class="card">
         <h3>COMMAND CENTER</h3>
-        <div style="display: flex; gap: 15px;">
-            <input type="text" id="cmdMsg" placeholder="System announcement...">
-            <button onclick="dispatch('all', 'message')" style="width: 200px;">BROADCAST</button>
-            <button onclick="dispatch('all', 'kickall')" style="background: #ff4e50; color: white; width: 150px;">SHUTDOWN</button>
-        </div>
+        <div style="display: flex; gap: 15px;"><input type="text" id="cmdMsg" placeholder="Message..."><button onclick="dispatch('all', 'message')" style="width: 200px;">SEND</button><button onclick="dispatch('all', 'kickall')" style="background: #ff4e50; color: white; width: 150px;">SHUTDOWN</button></div>
     </div>
-    <div class="card">
-        <h3>LIVE ENTITIES</h3>
-        <div id="playerList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px;">Scanning...</div>
-    </div>
+    <div class="card"><h3>REAL-TIME LOGS</h3><div id="logBox">Waiting for data...</div></div>
+    <div class="card"><h3>LIVE ENTITIES</h3><div id="playerList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px;">Scanning...</div></div>
 </div>
 <script>
     async function dispatch(target, action) {
@@ -59,8 +47,8 @@
     async function update() {
         const res = await fetch('/api/data'); const data = await res.json();
         document.getElementById('statusTag').innerHTML = data.is_online ? '<span class="status-pill online">LINK ACTIVE</span>' : '<span class="status-pill offline">LINK SEVERED</span>';
-        const list = document.getElementById('playerList');
-        list.innerHTML = data.players.length > 0 ? data.players.map(p => `<div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.05);"><div style="font-weight: 600; margin-bottom: 10px;">${p}</div><button onclick="dispatch('${p}', 'kick')" style="font-size: 10px; background: transparent; border: 1px solid #444; color: white;">KICK</button></div>`).join('') : '<p style="color: #444;">No entities active.</p>';
+        document.getElementById('logBox').innerHTML = data.logs.map(l => `<div>[${l.time}] ${l.msg}</div>`).join('');
+        document.getElementById('playerList').innerHTML = data.players.map(p => `<div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.05);"><div style="font-weight: 600; margin-bottom: 10px;">${p}</div><button onclick="dispatch('${p}', 'kick')" style="font-size: 10px; background: transparent; border: 1px solid #444; color: white;">KICK</button></div>`).join('');
     }
     async function masterLink() {
         const discord_id = document.getElementById('m_did').value; const username = document.getElementById('m_name').value; const game_id = document.getElementById('m_gid').value;
