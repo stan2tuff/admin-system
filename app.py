@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)
 
 # --- CONFIG ---
-app.secret_key = os.environ.get("SECRET_KEY", "STXN_SECURE_2026")
+app.secret_key = os.environ.get("SECRET_KEY", "STXN_FINAL_SECURE_2026")
 app.config["DISCORD_CLIENT_ID"] = "1466079509177438383"
 app.config["DISCORD_CLIENT_SECRET"] = os.environ.get("DISCORD_CLIENT_SECRET")
 app.config["DISCORD_REDIRECT_URI"] = "https://admin-system-mj0v.onrender.com/callback"
@@ -25,7 +25,8 @@ def load_db():
             db = json.load(f)
             now = time.time()
             for gid in list(db.get('games', {}).keys()):
-                if now - db['games'][gid].get('last_heartbeat', 0) > 60:
+                # Cleanup: If no poll in 45s, server is offline
+                if now - db['games'][gid].get('last_heartbeat', 0) > 45:
                     db['games'][gid]['players'] = []
             return db
         except: return {"users": {}, "games": {}, "logs": []}
@@ -42,8 +43,10 @@ def add_log(user, action, target, gid):
         "target": target,
         "gid": gid
     })
-    db['logs'] = db['logs'][:50]
+    db['logs'] = db['logs'][:30] # Keep logs light
     save_db(db)
+
+# --- ROUTES ---
 
 @app.route('/')
 def home():
@@ -51,8 +54,14 @@ def home():
     db = load_db()
     uid = session.get('user_id')
     role = "master" if uid == MASTER_DISCORD_ID else "client"
-    user_data = db['users'].get(uid, {"gid": "None", "name": "Unknown"})
-    return render_template('dashboard.html', user=session.get('username'), role=role, gid=user_data['gid'], all_users=db['users'], logs=db['logs'])
+    
+    # Check if this user is registered in your system
+    user_data = db['users'].get(uid)
+    if not user_data and role != "master":
+        return "Access Denied: You are not a registered STXN Client.", 403
+    
+    gid = user_data['gid'] if user_data else "NONE"
+    return render_template('dashboard.html', user=session.get('username'), role=role, gid=gid, all_users=db['users'], logs=db['logs'])
 
 @app.route('/login')
 def login(): return discord.create_session(scope=["identify"])
@@ -69,8 +78,13 @@ def set_command():
     if not discord.authorized: return "Unauthorized", 401
     db = load_db()
     uid = session.get('user_id')
-    gid = db['users'].get(uid, {}).get('gid')
-    if not gid or gid == "None": return "No GID", 400
+    user_info = db['users'].get(uid)
+    
+    if not user_info and uid != MASTER_DISCORD_ID: return "Forbidden", 403
+    gid = user_info['gid'] if uid != MASTER_DISCORD_ID else request.json.get('gid')
+    
+    if not gid: return "No GID", 400
+    
     data = request.json
     db['games'][gid]['cmds'] = {"target": data['target'], "action": data['action'], "msg": data.get('msg', '')}
     save_db(db)
@@ -90,7 +104,17 @@ def roblox_poll():
         db['games'][gid]['cmds'] = {} 
         save_db(db)
         return jsonify(cmd)
-    return jsonify({}), 403
+    return jsonify({"error": "Unauthorized GID"}), 403
+
+@app.route('/api/data')
+def get_data():
+    if not discord.authorized: return jsonify({}), 401
+    db = load_db()
+    uid = session.get('user_id')
+    gid = db['users'].get(uid, {}).get('gid', 'None')
+    game_data = db['games'].get(gid, {"players": [], "last_heartbeat": 0})
+    game_data['is_online'] = (time.time() - game_data.get('last_heartbeat', 0)) < 20
+    return jsonify(game_data)
 
 @app.route('/master/assign', methods=['POST'])
 def assign_game():
@@ -103,15 +127,6 @@ def assign_game():
         db['games'][gid] = {"players": [], "cmds": {}, "last_heartbeat": 0}
     save_db(db)
     return jsonify({"success": True})
-
-@app.route('/api/data')
-def get_data():
-    if not discord.authorized: return jsonify({"error": "Auth"}), 401
-    db = load_db()
-    gid = db['users'].get(session.get('user_id'), {}).get('gid', 'None')
-    game_data = db['games'].get(gid, {"players": [], "last_heartbeat": 0})
-    game_data['is_online'] = (time.time() - game_data.get('last_heartbeat', 0)) < 20
-    return jsonify(game_data)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
